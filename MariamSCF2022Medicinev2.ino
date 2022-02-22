@@ -11,8 +11,10 @@ Advanced Math and Science Academy Charter School In Marlborough
   Brown - Ground 
 
   IR Sensor connection 
-
- 
+PEMENOL CHIP CONFIGURATION:
+pin 100 song number 1001.mp3 "Please take medication" connected to pin 5 on MKR1000 main chip 
+pin 102 song number 1003.mp3 "Medication dispensed" connected to pin 4 on MKR1000 main chip
+pin 104 song number 1005.mp3 "Medication picked up" connected to pin 3 on MKR1000 main chip
   
 */
 
@@ -43,8 +45,16 @@ void setup() {
   lastDoseTime= timeprint(millis()); // initializes the var to the time when you start the program 
   Serial.println("Start time:");
   Serial.println(lastDoseTime);
+  /*
+   * pin 100 song number 1001.mp3 "Please take medication" connected to pin 5 on MKR1000 main chip 
+    pin 102 song number 1003.mp3 "Medication dispensed" connected to pin 4 on MKR1000 main chip
+    pin 104 song number 1005.mp3 "Medication picked up" connected to pin 3 on MKR1000 main chip
+   * 
+   */
   pinMode(9, INPUT); // pin 9 is connected to the IR sensor output
   pinMode(5, OUTPUT); // pin5 is connected to PEMENOL board for voice alert audio
+  pinMode(4, OUTPUT); // pin4 is connected to PEMENOL board for voice alert audio
+  pinMode(3, OUTPUT); // pin3 is connected to PEMENOL board for voice alert audio
   
   //delay(10000); // Delay 10 seconds 
   M1.attach(6);  // attaches the servo on pin 6 to the servo object Motor 1
@@ -115,6 +125,7 @@ void releaseDose(){
   
       overdoseProtection=1; //there is something on the tray, activate overdoseProtection
       Serial.println("Medicine dispensed"); 
+      Medicationdispensed(); 
    }
    else 
    Serial.println("Medicine not dispensed yet."); 
@@ -127,7 +138,7 @@ void readIRSensor(){
 }
   else{
     Serial.println("Medicine picked up!");
-    
+    Medicationpickedup();
     overdoseProtection=0; 
   }  
 
@@ -144,6 +155,26 @@ void voiceAlert(){
     Serial.println(count);
     count++; 
     
+
+
+}
+
+void Medicationdispensed(){
+
+    digitalWrite(4,LOW); // pin 4 is configured to the speaker system + playback chip 
+    delay(1000);
+    digitalWrite(4,HIGH);
+    Serial.print("Medication dispensed: ");  
+ 
+
+
+}
+void Medicationpickedup(){
+
+    digitalWrite(3,LOW); // pin 3 is configured to the speaker system + playback chip 
+    delay(1000);
+    digitalWrite(3,HIGH);
+    Serial.print("Medication picked up! ");  
  
 
 
