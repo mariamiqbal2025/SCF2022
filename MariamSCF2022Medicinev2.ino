@@ -19,6 +19,23 @@ pin 104 song number 1005.mp3 "Medication picked up" connected to pin 3 on MKR100
 */
 
 #include <Servo.h>
+#include <WiFi101.h>
+#include <WiFiClient.h>
+#include <WiFiServer.h>
+#include <WiFiSSLClient.h>
+#include <WiFiUdp.h>
+
+//Your Wifi router setup at home
+char ssid[] = "MY2.4G";   //your network SSID (aka WiFi name)
+char pass[] = "Nmamitn92#"; //your network password
+int status = WL_IDLE_STATUS;
+WiFiServer server(80);
+//To send SMS using the s  IFTTT
+const char* host = "maker.ifttt.com";
+WiFiSSLClient sslClient;
+
+
+
 
 Servo M1;  // create servo object to control a servo
 Servo M2;  // create servo object to control a servo
@@ -41,6 +58,9 @@ int timelapsedinmins =0; // time lapsed in minutes
 
 void setup() {
   delay(10000); //delay to show the console display
+ 
+
+  int r= Connect_to_Wifi(); // Connect to wifi for sendign text message 
   
   lastDoseTime= timeprint(millis()); // initializes the var to the time when you start the program 
   Serial.println("Start time:");
@@ -69,6 +89,8 @@ void loop() {
   Serial.print("Overdose : ");
   Serial.println(overdoseProtection);
   delay(1000);
+
+  
 if(overdoseProtection==0 ){ 
   // release medications 
   releaseDose(); 
@@ -125,7 +147,8 @@ void releaseDose(){
   
       overdoseProtection=1; //there is something on the tray, activate overdoseProtection
       Serial.println("Medicine dispensed"); 
-      Medicationdispensed(); 
+      Medicationdispensed();
+       
    }
    else 
    Serial.println("Medicine not dispensed yet."); 
@@ -165,7 +188,7 @@ void Medicationdispensed(){
     delay(1000);
     digitalWrite(4,HIGH);
     Serial.print("Medication dispensed: ");  
- 
+    delay(10000);
 
 
 }
@@ -175,13 +198,15 @@ void Medicationpickedup(){
     delay(1000);
     digitalWrite(3,HIGH);
     Serial.print("Medication picked up! ");  
- 
+    delay(10000);
 
 
 }
 
 void sendtextMessage(){
   Serial.println("Your loved one needs to take their medicine."); 
+  //Send Text message
+  ifttt_Send_SMS();
 }
 
 int timeprint(unsigned long int mills){
@@ -202,4 +227,78 @@ int timeprint(unsigned long int mills){
   
   return minutes;
   
+}
+
+
+
+int  Connect_to_Wifi()
+
+{
+if (WiFi.status() == WL_NO_SHIELD) {
+       // In case of connection issues wait 
+        delay(3000);
+        return 1;       
+  }
+      // attempt to connect to Wifi network
+    while ( status != WL_CONNECTED) {
+   Serial.println("Connecting to Wifi");
+        status = WiFi.begin(ssid, pass);
+        if(status != WL_CONNECTED){
+          // wait 10 seconds for connection:
+        delay(1000);
+        }
+
+    }
+
+    Serial.println("Connected to Wifi");
+    server.begin();
+    printWifiStatus();
+
+}
+
+void printWifiStatus() {
+    // print the SSID of the network you're attached to:
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+    // print your WiFi shield's IP address:
+    IPAddress ip = WiFi.localIP();
+    Serial.print("IP Address: ");
+    Serial.println(ip);
+    //signal strength:
+    long rssi = WiFi.RSSI();
+    Serial.print("signal strength (RSSI):");
+    Serial.print(rssi);
+    Serial.println(" dBm");
+    // print where to go in a browser:
+    Serial.print("Your IP address to use in the browser: ");
+    Serial.println(ip);
+}
+
+
+//call to IFTTT recipe to send an email or sms to your mobile
+void ifttt_Send_SMS() {
+  String Medicine_not_pickedup = "Y";
+  String  data = "{\"value1\":\"" + Medicine_not_pickedup   + "\"}";
+
+  int i = sslClient.connect(host, 443);
+  Serial.println("SSL connect return code");
+  Serial.println(i);
+  
+  if (sslClient.connect(host, 443)) { //443 or 80
+    //change this to your Maker setting from https://ifttt.com/services/maker/settings
+    //sslClient.println("POST /trigger/moition_detected/with/key/XXXXXXXXXXXXXXXX HTTP/1.1");
+    sslClient.println("POST  /trigger/{MedicineNotPicked}/with/key/eMqTu9G_LZ1WYzmVyZEN6P6t1kqVpGlSdrg4lYIIV6M  HTTP/1.1");
+   // POST https://maker.ifttt.com/trigger/{event}/with/key/eMqTu9G_LZ1WYzmVyZEN6P6t1kqVpGlSdrg4lYIIV6M
+    sslClient.println("Host: maker.ifttt.com");
+    sslClient.println("Content-Type: application/json");
+    sslClient.print("Content-Length: ");
+    sslClient.println(data.length());
+    sslClient.println();
+    sslClient.print(data);
+    sslClient.stop();
+    Serial.println("IFTTT request Sucessful");
+  }
+  else {
+    Serial.println("IFTTT request failed");
+  }
 }
